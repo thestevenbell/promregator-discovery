@@ -1,0 +1,17 @@
+[
+  {
+    "targets": [
+      "promregator:8080"
+    ],
+    "labels": {
+      "__meta_promregator_target_path": "/promregatorMetrics",
+      "__meta_promregator_target_orgName": null,
+      "__meta_promregator_target_spaceName": null,
+      "__meta_promregator_target_applicationName": null,
+      "__meta_promregator_target_applicationId": null,
+      "__meta_promregator_target_instanceNumber": null,
+      "__meta_promregator_target_instanceId": null,
+      "__metrics_path__": "/promregatorMetrics"
+    }
+  }
+]

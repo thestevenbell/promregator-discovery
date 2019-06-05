@@ -9,6 +9,3 @@ FROM alpine
 WORKDIR ./
 COPY --from=build-env ./promregator-discovery ./
 ENTRYPOINT ./promregator-discovery
-
-# Declare volumes to mount
-VOLUME ["/root/data"]
