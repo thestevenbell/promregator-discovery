@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -18,6 +19,11 @@ import (
 
 func main() {
 
+	// create a WaitGroup that will only be Done when a SIG is detected. so that the process does not exit.
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+
 	// add ability to gracefully stop the app
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
@@ -25,16 +31,32 @@ func main() {
 	go func() {
 		sig := <-gracefulStop
 		fmt.Printf("caught sig: %+v", sig)
+		defer wg.Done()
 		os.Exit(0)
 	}()
 
-	var TargetUrl = flag.String("targetUrl", "http://localhost:8080", "Discovery URL of the Promregator target to be scraped.")
-	var IntervalSeconds = flag.Int("interval", 30, "Provide the scrape interval in seconds.")
-	var FileDestination = flag.String("fileDestination", "/root/data/prometheus-prometheus.json", "Path and filename the Prometheus target output file.")
+	var TargetUrl = flag.String("targetUrl", "", "Discovery URL of the Promregator target to be scraped.")
+	var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
+	var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
 
 	flag.Parse()
 
-	fmt.Println("Process started with targetUrl: ", *TargetUrl, "and an interval of ", *IntervalSeconds, ".")
+	if *TargetUrl == ""{
+		println("Exiting, no targetUrl was given as a command line argument.")
+		os.Exit(0)
+	}
+
+	if *IntervalSeconds <= 0 {
+		println("Exiting, no interval was given as a command line argument or the value was a non-positive integer.")
+		os.Exit(0)
+	}
+
+	if *FileDestination == "" {
+		println("Exiting, no fileDestination was given as a command line argument.")
+		os.Exit(0)
+	}
+
+	fmt.Println("Process started with targetUrl: ", *TargetUrl, ", an interval of ", *IntervalSeconds, "and a file path and name of ", *FileDestination, ".")
 
 	ticker := time.NewTicker(time.Duration(*IntervalSeconds) * time.Second)
 	defer ticker.Stop()
@@ -45,6 +67,7 @@ func main() {
 			response, err := callPromregatorDiscoveryEndpoint(TargetUrl)
 			if err != nil {
 				// TODO - handle error then pass the bytes to the file writer
+
 			} else{
 				err := validateResponse(response)
 				if err != nil {
@@ -58,10 +81,13 @@ func main() {
 		}
 	}()
 
+	// wait forever while the ticker ticks
+	wg.Wait()
+
 	// TODO - remove this timeout so that the process continues for eternity.
-	time.Sleep(5000 * time.Millisecond)
-	ticker.Stop()
-	fmt.Println("Ticker stopped")
+	//time.Sleep(5000 * time.Millisecond)
+	//ticker.Stop()
+	//fmt.Println("Ticker stopped")
 }
 
 func callPromregatorDiscoveryEndpoint(targetUrl *string) (body []byte, err error) {
