@@ -2,7 +2,6 @@ FROM golang:alpine AS build-env
 LABEL stage=intermediate
 WORKDIR /go/src/app
 COPY . .
-VOLUME ["promregator_discovery/"]
 RUN go get -d -v ./...
 RUN go install -v ./...
 
@@ -12,4 +11,6 @@ ENTRYPOINT ["app"]
 FROM alpine
 WORKDIR /app
 COPY --from=build-env /go/bin/app .
+RUN touch ./promregator_discovery.json
+CMD chmod +rw ./promregator_discovery.json
 ENTRYPOINT ["./app"]
