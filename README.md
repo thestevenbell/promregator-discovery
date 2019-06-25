@@ -19,10 +19,24 @@ From the main directory:
 **remove those pesky unnecessary intermediate images created in the multibuild Docker process**  
 ```docker image prune --filter label=stage=intermediate```
 
-**run the container for local on Mac**  
+**run the container for local development on Mac**  
+
 ```docker run -it --rm \
 --mount type=volume,source=promregator_discovery,target=/promregator_discovery \
 --name promregator-discovery thestevenbell/promregator-discovery:latest \
 -targetUrl=http://host.docker.internal:8080/discovery \
--interval=2 \
--fileDestination=/promregator_discovery/prometheus.json```
+-interval=10 \
+-fileDestination=/promregator_discovery/promregator_discovery.json
+```
+**run a docker stack with Promregator-Discovery, Promregator and Prome
+## Prometheus and Promregator Configuration
+See the [**prometheus.yml**]
+```yaml
+scrape_configs:
+  - job_name: 'promregator-discovery'
+    file_sd_configs:
+    - files:
+      - /promregator_discovery/promregator_discovery.json
+```
+
+See the [**docker-compose.yml**](stack/docker-compose.yml) for an example stack.

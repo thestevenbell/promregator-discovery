@@ -1,0 +1,83 @@
+
+version: '3.7'
+
+networks:
+  private:
+    driver: overlay
+    name: monitoring_net
+  public:
+    driver: overlay
+    name: external_net
+
+volumes:
+  prometheus_data: {}
+  promregator_discovery:
+    external: true
+
+configs:
+  # Prometheus Configs
+  prometheus_prometheus_yml:
+    file: prometheus.yml
+
+  # Promregator Configs
+  promregator_yml:
+    file: promregator.yml
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.9.0
+    ports:
+      - 9090:9090
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.path=/prometheus'
+    configs:
+      - source: prometheus_prometheus_yml
+        target: /etc/prometheus/prometheus.yml
+    volumes:
+      - prometheus_data:/prometheus
+      - promregator_discovery:/promregator_discovery
+    networks:
+      - private
+      - public
+    deploy:
+      restart_policy:
+        condition: any
+      mode: replicated
+      replicas: 1
+
+  promregator-discovery:
+    image: thestevenbell/promregator-discovery:latest
+    command:
+      - '-targetUrl=http://host.docker.internal:8080/discovery'
+      - '-interval=20'
+      - '-fileDestination=/promregator_discovery/promregator_discovery.json'
+    volumes:
+      - promregator_discovery:/promregator_discovery
+    networks:
+      - private
+      - public
+    deploy:
+      restart_policy:
+        condition: any
+      mode: replicated
+      replicas: 1
+
+  promregator:
+    image: promregator/promregator:0.5.7
+    ports:
+      - 8080:8080
+    configs:
+      - source: promregator_yml
+        target: /etc/promregator/promregator.yml
+    environment:
+      - CF_PASSWORD=$SVC_ACCT_PASSWORD
+    networks:
+      - private
+      - public
+    deploy:
+      restart_policy:
+        condition: any
+      mode: replicated
+      replicas: 1

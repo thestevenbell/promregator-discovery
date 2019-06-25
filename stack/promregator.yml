@@ -1,0 +1,17 @@
+cf:
+  api_host: <url>
+  username: <user_name>
+
+promregator:
+  authenticator:
+    type: none
+
+  discovery:
+    hostname: 'promregator'
+    port: '8080'
+
+  targets:
+    - orgName: org1
+      spaceName: QA
+      applicationName: app1
+      path: /metrics
