@@ -23,9 +23,8 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-
 	// add ability to gracefully stop the app
-	var gracefulStop = make(chan os.Signal)
+	var gracefulStop= make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
 	go func() {
@@ -35,13 +34,13 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var TargetUrl = flag.String("targetUrl", "", "Discovery URL of the Promregator target to be scraped.")
-	var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
-	var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
+	var TargetUrl= flag.String("targetUrl", "", "Discovery URL of the Promregator target to be scraped.")
+	var IntervalSeconds= flag.Int("interval", 1, "Provide the scrape interval in seconds.")
+	var FileDestination= flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
 
 	flag.Parse()
 
-	if *TargetUrl == ""{
+	if *TargetUrl == "" {
 		println("Exiting, no targetUrl was given as a command line argument.")
 		os.Exit(0)
 	}
@@ -66,28 +65,20 @@ func main() {
 			fmt.Println("Tick at", t)
 			response, err := callPromregatorDiscoveryEndpoint(TargetUrl)
 			if err != nil {
-				// TODO - handle error then pass the bytes to the file writer
-
-			} else{
+				fmt.Println("callPromregatorDiscoveryEndpoint() failed.")
+			} else {
 				err := validateResponse(response)
 				if err != nil {
-					// TODO - handle error
 					fmt.Println("Validation failed.  Not saving configuration.")
 				} else {
 					saveResponseToFile(response, *FileDestination)
 				}
 			}
-				// TODO - change the validate logic to return an error
 		}
 	}()
 
 	// wait forever while the ticker ticks
 	wg.Wait()
-
-	// TODO - remove this timeout so that the process continues for eternity.
-	//time.Sleep(5000 * time.Millisecond)
-	//ticker.Stop()
-	//fmt.Println("Ticker stopped")
 }
 
 func callPromregatorDiscoveryEndpoint(targetUrl *string) (body []byte, err error) {

@@ -12,7 +12,6 @@ From the main directory:
 **Execute**  
 ```go run main.go -targetUrl=http://localhost:8080/discovery -interval=30 -fileDestination=./promregator-discovery.json```
 
-
 ## Docker
 **build the image**  
 ```docker build -t thestevenbell/promregator-discovery:latest .```  
