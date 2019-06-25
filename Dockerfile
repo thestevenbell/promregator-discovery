@@ -11,6 +11,6 @@ ENTRYPOINT ["app"]
 FROM alpine
 WORKDIR /app
 COPY --from=build-env /go/bin/app .
-RUN touch ./promregator_discovery.json
-CMD chmod +rw ./promregator_discovery.json
+#RUN touch ./promregator_discovery.json
+#CMD chmod +rw ./promregator_discovery.json
 ENTRYPOINT ["./app"]
