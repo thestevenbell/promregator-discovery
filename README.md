@@ -28,15 +28,11 @@ From the main directory:
 -interval=10 \
 -fileDestination=/promregator_discovery/promregator_discovery.json
 ```
-**run a docker stack with Promregator-Discovery, Promregator and Prome
-## Prometheus and Promregator Configuration
-See the [**prometheus.yml**]
-```yaml
-scrape_configs:
-  - job_name: 'promregator-discovery'
-    file_sd_configs:
-    - files:
-      - /promregator_discovery/promregator_discovery.json
-```
 
-See the [**docker-compose.yml**](stack/docker-compose.yml) for an example stack.
+**run a docker stack with Promregator-Discovery, Promregator and Prometheus.**  
+See the [**prometheus.yml**](stack/prometheus.yml) file for example scrape configuration making use of the discovered targets file created by this project.  
+```bash
+docker stack deploy \
+--compose-file stack/docker-compose.yml \
+monitoring
+```
