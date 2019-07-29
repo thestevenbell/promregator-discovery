@@ -12,6 +12,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // build with `go build .` from within the the project main directory, this builds the binary and save it in in current dir.
@@ -22,6 +24,13 @@ func main() {
 	// create a WaitGroup that will only be Done when a SIG is detected. so that the process does not exit.
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	go func() {
+		port := ":2112"
+		fmt.Println("Listening on port:", port)
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(port, nil)
+	}()
 
 	// add ability to gracefully stop the app
 	var gracefulStop = make(chan os.Signal)
@@ -69,7 +78,8 @@ func main() {
 			} else {
 				err := validateResponse(response)
 				if err != nil {
-					fmt.Println("Validation failed.  Not saving configuration.")
+					//  TODO - add an error counter here.  Then create a Prometheus alert to check for these errors.
+					fmt.Println("Validation failed.  Not saving configuration. Will continue calling the targetURL in the event that the validation failure is due to a temprary issue with Promregator.")
 				} else {
 					saveResponseToFile(response, *FileDestination)
 				}
