@@ -15,7 +15,7 @@ import (
 )
 
 // build with `go build .` from within the the project main directory, this builds the binary and save it in in current dir.
-// example run command:  `go run main.go -targetUrl=http://localhost:8080/discovery -interval=2 -fileDestination=./data.json`
+// example run command:  `go run main.go -targetURL=http://localhost:8080/discovery -interval=5 -fileDestination=./data.json`
 
 func main() {
 
@@ -24,7 +24,7 @@ func main() {
 	wg.Add(1)
 
 	// add ability to gracefully stop the app
-	var gracefulStop= make(chan os.Signal)
+	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
 	go func() {
@@ -34,14 +34,14 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var TargetUrl= flag.String("targetUrl", "", "Discovery URL of the Promregator target to be scraped.")
-	var IntervalSeconds= flag.Int("interval", 1, "Provide the scrape interval in seconds.")
-	var FileDestination= flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
+	var TargetURL = flag.String("targetURL", "", "Discovery URL of the Promregator target to be scraped.")
+	var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
+	var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
 
 	flag.Parse()
 
-	if *TargetUrl == "" {
-		println("Exiting, no targetUrl was given as a command line argument.")
+	if *TargetURL == "" {
+		println("Exiting, no targetURL was given as a command line argument.")
 		os.Exit(0)
 	}
 
@@ -55,7 +55,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("Process started with targetUrl: ", *TargetUrl, ", an interval of ", *IntervalSeconds, "and a file path and name of ", *FileDestination, ".")
+	fmt.Println("Process started with targetURL: ", *TargetURL, ", an interval of ", *IntervalSeconds, "and a file path and name of ", *FileDestination, ".")
 
 	ticker := time.NewTicker(time.Duration(*IntervalSeconds) * time.Second)
 	defer ticker.Stop()
@@ -63,7 +63,7 @@ func main() {
 	go func() {
 		for t := range ticker.C {
 			fmt.Println("Tick at", t)
-			response, err := callPromregatorDiscoveryEndpoint(TargetUrl)
+			response, err := callPromregatorDiscoveryEndpoint(TargetURL)
 			if err != nil {
 				fmt.Println("callPromregatorDiscoveryEndpoint() failed.")
 			} else {
@@ -81,37 +81,36 @@ func main() {
 	wg.Wait()
 }
 
-func callPromregatorDiscoveryEndpoint(targetUrl *string) (body []byte, err error) {
-	resp, err := http.Get(*targetUrl)
+func callPromregatorDiscoveryEndpoint(targetURL *string) (body []byte, err error) {
+	resp, err := http.Get(*targetURL)
 	if err != nil {
-		fmt.Printf("Error while calling: %s Error message: %s", *targetUrl, err)
+		fmt.Printf("Error while calling: %s Error message: %s", *targetURL, err)
 	} else {
 		defer resp.Body.Close()
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println("callPromregatorDiscoveryEndpoint: Error message:", err)
-			return body, err
 		} else {
-			fmt.Println("callPromregatorDiscoveryEndpoint: body:", string(body[0:20]))
+			fmt.Println("callPromregatorDiscoveryEndpoint: body:", string(body))
 		}
 	}
 	return body, err
 }
 
-func validateResponse(body []byte)(err error){
-	type targetsJson struct {
+func validateResponse(body []byte) (err error) {
+	type targetsJSON struct {
 		Targets []string
 		Labels  map[string]string
 	}
 
-	var bodyJson []targetsJson
+	var bodyJSON []targetsJSON
 
-	if err := json.Unmarshal(body, &bodyJson); err != nil {
+	if err := json.Unmarshal(body, &bodyJSON); err != nil {
 		fmt.Println("validateResponse:json.Unmarshal: Error message:", err)
 		return err
 	}
 
-	if (len(bodyJson) == 0 || len(bodyJson) == 1 ) {
+	if len(bodyJSON) == 0 || len(bodyJSON) == 1 {
 		err := errors.New("The discovery API returned 0 or 1 target scrape endpoints.  This often indicates a problem" +
 			" with Promregator's ability to connect with the Cloud Foundry API.  To avoid removing the current Prometheus" +
 			" configurations, the configuration file will not be overwritten.  This process will continue to attempt to" +
@@ -126,6 +125,6 @@ func validateResponse(body []byte)(err error){
 func saveResponseToFile(body []byte, fileDestination string) {
 	err := ioutil.WriteFile(fileDestination, body, 0644)
 	if err != nil {
-		fmt.Println("An error occured while attempting to save the targets to file", err)
+		fmt.Println("An error occurred while attempting to save the targets to file", err)
 	}
 }

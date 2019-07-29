@@ -10,7 +10,7 @@ From the main directory:
 **Build**  
 ```go build .```  
 **Execute**  
-```go run main.go -targetUrl=http://localhost:8080/discovery -interval=30 -fileDestination=./promregator-discovery.json```
+```go run main.go -targetURL=http://localhost:8080/discovery -interval=30 -fileDestination=./promregator-discovery.json```
 
 ## Docker
 **build the image**  
@@ -23,7 +23,7 @@ From the main directory:
 ```docker run -it --rm \
 --mount type=volume,source=promregator_discovery,target=/promregator_discovery \
 --name promregator-discovery thestevenbell/promregator-discovery:latest \
--targetUrl=http://host.docker.internal:8080/discovery \
+-targetURL=http://host.docker.internal:8080/discovery \
 -interval=10 \
 -fileDestination=/promregator_discovery/promregator_discovery.json
 ```
