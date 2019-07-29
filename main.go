@@ -30,8 +30,8 @@ func (i *labelArray) Set(value string) error {
 }
 
 type discoveryJSON struct {
-	Targets    []string
-	LabelsJSON map[string]string
+	Targets []string
+	Labels  map[string]string
 }
 
 var targetsJSON []discoveryJSON
@@ -56,8 +56,8 @@ func main() {
 	var TargetURL = flag.String("targetURL", "", "Discovery URL of the Promregator target to be scraped.")
 	var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
 	var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
-	var Labels labelArray
-	flag.Var(&Labels, "label", "meta-labels to be added to each target in the output file. Use key:value format.  The key will be added as the label name with \"__meta_promregator_target_\" prepended and the value will be added as the label value as provided. For example, to add a label to specify the Cloud Foundry availability zone of primary provide the flag with the following value '-label availabilityZone primary'. This will add a label '__meta_promregator_target_availabilityZone' with the value 'primary'.")
+	var flagLabels labelArray
+	flag.Var(&flagLabels, "label", "meta-labels to be added to each target in the output file. Use key:value format.  The key will be added as the label name with \"__meta_promregator_target_\" prepended and the value will be added as the label value as provided. For example, to add a label to specify the Cloud Foundry availability zone of primary provide the flag with the following value '-label availabilityZone primary'. This will add a label '__meta_promregator_target_availabilityZone' with the value 'primary'.")
 
 	flag.Parse()
 
@@ -76,11 +76,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("len=%d cap=%d %v\n", len(Labels), cap(Labels), Labels)
+	fmt.Printf("len=%d cap=%d %v\n", len(flagLabels), cap(flagLabels), flagLabels)
 
 	var mapOfLabels = make(map[string]string)
 
-	for _, v := range Labels {
+	for _, v := range flagLabels {
 		s := strings.Split(v, ":")
 		if len(s) != 2 {
 			fmt.Printf("The value provided for the -label flag < %s > should be given as a key value pair delimited with a : semicolon. Exiting", v)
@@ -163,13 +163,19 @@ func addLabels(responseAsJSON []discoveryJSON, mapOfLabelsToAdd map[string]strin
 
 	// TODO - print the labels existing
 	for i := range responseAsJSON {
-		discoveryJSONi := responseAsJSON[i]
 
-		fmt.Printf("responseAsJson.LabelsJSON: %v  .  \n", discoveryJSONi)
+		fmt.Printf("responseAsJson.LabelsJSON: %v  .  \n", responseAsJSON[i])
 
-		fmt.Println("len(discoveryJSONi.LabelsJSON):", len(discoveryJSONi.LabelsJSON))
+		fmt.Println("len(discoveryJSONi.LabelsJSON):", len(responseAsJSON[i].Labels))
 
-		for j, v := range responseAsJSON[i].LabelsJSON {
+		for l, lv := range mapOfLabelsToAdd {
+			var labelWithPrependedMeta strings.Builder
+			labelWithPrependedMeta.WriteString("__meta_promregator_target_")
+			labelWithPrependedMeta.WriteString(l)
+			responseAsJSON[i].Labels[labelWithPrependedMeta.String()] = lv
+		}
+
+		for j, v := range responseAsJSON[i].Labels {
 			fmt.Println("for j := range responseAsJSON[i].LabelsJSON { : index:  ", j, "val:  ", v)
 		}
 	}

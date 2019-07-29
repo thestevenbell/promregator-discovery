@@ -46,23 +46,29 @@ services:
         condition: any
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - node.hostname == ${PROMETHEUS_CONSTRAINTS_HOSTNAME:?err}
 
   promregator-discovery:
-    image: thestevenbell/promregator-discovery:latest
     command:
-      - '-targetUrl=http://host.docker.internal:8080/discovery'
+      - '-targetUrl=http://promregator:8080/discovery'
       - '-interval=20'
       - '-fileDestination=/promregator_discovery/promregator_discovery.json'
+      - '-fileDestination=/promregator_discovery/promregator_discovery-za.json'
+      - '-label zone:np'
     volumes:
       - promregator_discovery:/promregator_discovery
     networks:
       - private
-      - public
     deploy:
       restart_policy:
         condition: any
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - node.hostname == ${PROMETHEUS_CONSTRAINTS_HOSTNAME:?err}
 
   promregator:
     image: promregator/promregator:0.5.7
@@ -72,7 +78,7 @@ services:
       - source: promregator_yml
         target: /etc/promregator/promregator.yml
     environment:
-      - CF_PASSWORD=$SVC_ACCT_PASSWORD
+      - CF_PASSWORD=${SVC_ACCT_PASSWORD:?err}
     networks:
       - private
       - public
