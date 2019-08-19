@@ -5,6 +5,12 @@ This a simple GoLang script to call the Promregator /discovery API, do a basic v
 
 A Docker image is provided that will both build and allow execution of the binary.  
 
+Image on cloud.docker.com: https://cloud.docker.com/u/thestevenbell/repository/docker/thestevenbell/promregator-discovery
+
+ref to the container:  
+
+**thestevenbell/repository/docker/thestevenbell/promregator-discovery:latest**
+
 ## Local Development
 From the main directory:  
 **Build**  
