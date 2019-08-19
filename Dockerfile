@@ -1,4 +1,4 @@
-FROM golang:alpine AS build-env
+FROM golang:1.12.9-alpine3.10 AS build-env
 LABEL stage=intermediate
 WORKDIR /go/src/app
 COPY . .
