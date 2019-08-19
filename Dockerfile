@@ -1,16 +1,12 @@
-FROM golang:1.12.9-alpine3.10 AS build-env
+FROM golang:1.12.0-stretch AS build-env
 LABEL stage=intermediate
-WORKDIR /go/src/app
-COPY . .
-RUN go get -d -v ./...
-RUN go install -v ./...
-
-ENTRYPOINT ["app"]
+COPY . /app
+WORKDIR /app
+ENV GO111MODULE=on
+RUN CGO_ENABLED=0 GOOS=linux go build -o app
 
 # second stage, only include the compiled binary in the final image
-FROM alpine
-WORKDIR /app
-COPY --from=build-env /go/bin/app .
-#RUN touch ./promregator_discovery.json
-#CMD chmod +rw ./promregator_discovery.json
+FROM alpine:3.10.1
+WORKDIR /root/
+COPY --from=build-env /app .
 ENTRYPOINT ["./app"]
