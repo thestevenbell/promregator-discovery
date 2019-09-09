@@ -25,7 +25,8 @@ From the main directory:
 --name promregator-discovery thestevenbell/promregator-discovery:latest \
 -targetURL=http://host.docker.internal:8080/discovery \
 -interval=10 \
--fileDestination=/promregator_discovery/promregator_discovery.json
+-fileDestination=/promregator_discovery/promregator_discovery.json \
+-metricSubsystem=payments
 ```
 
 **run a docker stack with Promregator-Discovery, Promregator and Prometheus.**  

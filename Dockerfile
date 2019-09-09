@@ -1,5 +1,6 @@
 FROM golang:alpine AS build-env
 LABEL stage=intermediate
+RUN apk add git
 WORKDIR /go/src/app
 COPY . .
 RUN go get -d -v ./...
@@ -11,6 +12,5 @@ ENTRYPOINT ["app"]
 FROM alpine
 WORKDIR /app
 COPY --from=build-env /go/bin/app .
-#RUN touch ./promregator_discovery.json
-#CMD chmod +rw ./promregator_discovery.json
+EXPOSE ${PORT:-8080}
 ENTRYPOINT ["./app"]
