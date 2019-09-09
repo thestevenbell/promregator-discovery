@@ -1,7 +1,7 @@
 FROM golang:1.12.9-alpine3.10 AS build-env
 LABEL stage=intermediate
 RUN apk add git
-WORKDIR /go/src/app
+WORKDIR /app
 COPY . .
 ENV GO111MODULE=on
 RUN CGO_ENABLED=0 GOOS=linux go build -o app
