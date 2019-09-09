@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,11 +14,45 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // build with `go build .` from within the the project main directory, this builds the binary and save it in in current dir.
-// example run command:  `go run main.go -targetURL=http://localhost:8080/discovery -interval=5 -fileDestination=./data.json`
+// example run command:  ` PORT=8081 go run main.go -targetURL=http://localhost:8080/discovery -interval=5 -fileDestination=./data.json -metricSubsystem=payments`
+
+var TargetURL = flag.String("targetURL", "", "Discovery URL of the Promregator target to be scraped.")
+var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
+var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
+var MetricSubsystem = flag.String("metricSubsystem", "promregator_discovery", "Software subsystem or domain identifier. Will be added to custom Prometheus metrics. Must be a valid prometheus metric name.")
+
+var httpDurationsHistogram prometheus.Histogram
+var getDiscoveryFailureCounter prometheus.Counter
+
+func init() {
+	flag.Parse()
+	httpDurationsHistogram = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Subsystem: *MetricSubsystem,
+		Name:      "durations_histogram_seconds",
+		Help:      "HTTP latency distributions.",
+	})
+
+	getDiscoveryFailureCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: *MetricSubsystem,
+		Name:      "custom_failed_get_discovery_total",
+		Help:      "Total number of failed attempts to get discovery api from Promregator.",
+	})
+
+	// Register the summary and the histogram with Prometheus's default registry.
+	prometheus.MustRegister(httpDurationsHistogram)
+
+	if err := prometheus.Register(getDiscoveryFailureCounter); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("taskCounter registered.")
+	}
+
+}
 
 func main() {
 
@@ -26,10 +61,10 @@ func main() {
 	wg.Add(1)
 
 	go func() {
-		port := ":2112"
-		fmt.Println("Listening on port:", port)
+		port := getEnvVar("PORT", "8080")
+		fmt.Println(fmt.Sprintf("Listening on port: %s", port))
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(port, nil)
+		log.Fatal(http.ListenAndServe("localhost:"+port, nil))
 	}()
 
 	// add ability to gracefully stop the app
@@ -42,12 +77,6 @@ func main() {
 		defer wg.Done()
 		os.Exit(0)
 	}()
-
-	var TargetURL = flag.String("targetURL", "", "Discovery URL of the Promregator target to be scraped.")
-	var IntervalSeconds = flag.Int("interval", 1, "Provide the scrape interval in seconds.")
-	var FileDestination = flag.String("fileDestination", "", "Path and filename the Prometheus target output file.")
-
-	flag.Parse()
 
 	if *TargetURL == "" {
 		println("Exiting, no targetURL was given as a command line argument.")
@@ -64,7 +93,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("Process started with targetURL: ", *TargetURL, ", an interval of ", *IntervalSeconds, "and a file path and name of ", *FileDestination, ".")
+	fmt.Println("Process started with targetURL: ", *TargetURL, ", an interval of ", *IntervalSeconds, ", a metrics subsystem designator of ", *MetricSubsystem, "and a file path and name of ", *FileDestination, ".")
 
 	ticker := time.NewTicker(time.Duration(*IntervalSeconds) * time.Second)
 	defer ticker.Stop()
@@ -79,7 +108,7 @@ func main() {
 				err := validateResponse(response)
 				if err != nil {
 					//  TODO - add an error counter here.  Then create a Prometheus alert to check for these errors.
-					fmt.Println("Validation failed.  Not saving configuration. Will continue calling the targetURL in the event that the validation failure is due to a temprary issue with Promregator.")
+					fmt.Println("Validation failed.  Not saving configuration. Will continue calling the targetURL in the event that the validation failure is due to a temporary issue with Promregator.")
 				} else {
 					saveResponseToFile(response, *FileDestination)
 				}
@@ -91,10 +120,31 @@ func main() {
 	wg.Wait()
 }
 
+func getEnvVar(key string, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func callPromregatorDiscoveryEndpoint(targetURL *string) (body []byte, err error) {
-	resp, err := http.Get(*targetURL)
+
+	start := time.Now()
+
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+
+	resp, err := client.Get(*targetURL)
+
+	elapsed := time.Since(start).Seconds()
+
+	httpDurationsHistogram.Observe(elapsed)
+
 	if err != nil {
 		fmt.Printf("Error while calling: %s Error message: %s", *targetURL, err)
+		getDiscoveryFailureCounter.Inc()
 	} else {
 		defer resp.Body.Close()
 		body, err = ioutil.ReadAll(resp.Body)

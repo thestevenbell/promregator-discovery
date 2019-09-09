@@ -5,11 +5,12 @@ This a simple GoLang script to call the Promregator /discovery API, do a basic v
 
 A Docker image is provided that will both build and allow execution of the binary.  
 
-Image on cloud.docker.com: https://cloud.docker.com/u/thestevenbell/repository/docker/thestevenbell/promregator-discovery
+Image on cloud.docker.com: 
+**https://cloud.docker.com/u/thestevenbell/repository/docker/thestevenbell/promregator-discovery**
 
-ref to the container:  
 
-**thestevenbell/repository/docker/thestevenbell/promregator-discovery:latest**
+ref the container for docker:  
+**thestevenbell/promregator-discovery:latest**
 
 ## Local Development
 From the main directory:  
@@ -31,7 +32,8 @@ From the main directory:
 --name promregator-discovery thestevenbell/promregator-discovery:latest \
 -targetURL=http://host.docker.internal:8080/discovery \
 -interval=10 \
--fileDestination=/promregator_discovery/promregator_discovery.json
+-fileDestination=/promregator_discovery/promregator_discovery.json \
+-metricSubsystem=payments
 ```
 
 **run a docker stack with Promregator-Discovery, Promregator and Prometheus.**  
