@@ -1,16 +1,19 @@
-FROM golang:alpine AS build-env
+FROM golang:1.12.9-alpine3.10 AS build-env
 LABEL stage=intermediate
 RUN apk add git
 WORKDIR /go/src/app
 COPY . .
-RUN go get -d -v ./...
-RUN go install -v ./...
-
+ENV GO111MODULE=on
+RUN CGO_ENABLED=0 GOOS=linux go build -o app
 ENTRYPOINT ["app"]
 
+
 # second stage, only include the compiled binary in the final image
-FROM alpine
-WORKDIR /app
-COPY --from=build-env /go/bin/app .
+FROM alpine:3.10.1
+
 EXPOSE ${PORT:-8080}
+
+WORKDIR /root/
+COPY --from=build-env /app .
+
 ENTRYPOINT ["./app"]
